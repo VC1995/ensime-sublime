@@ -88,7 +88,7 @@ class EnsimeEventListener(sublime_plugin.EventListener):
             else:
                 env.editor.ignore_prefix = None
 
-            if (env.editor.current_prefix and prefix == env.editor.current_prefix):
+            if (env.editor.current_prefix is not None and prefix == env.editor.current_prefix):
                 env.editor.current_prefix = None
                 if view.is_popup_visible():
                     view.hide_popup()
