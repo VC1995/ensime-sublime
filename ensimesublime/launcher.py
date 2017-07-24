@@ -24,7 +24,7 @@ class EnsimeProcess(object):
     def stop(self):
         if self.process is None:
             return
-        self.process.terminate()
+        os.kill(self.process.pid, signal.SIGTERM)
         self.__cleanup()
         self.__stopped_manually = True
 
