@@ -144,11 +144,11 @@ consequently the context menu commands may take longer to get enabled. You may c
         for sym in syms:
             p = sym.get("pos")
             if p:
-                location_list.append((p["file"], p["line"]))
+                location_list.append((p["file"], p["line"] + 1))
                 path = relative_path(self.env.project_root, str(p["file"]))
                 path_to_display = path if path is not None else str(p["file"])
                 item_list.append(["{}".format(str(sym["name"]).replace("$", ".")),
-                                  "[Line {}] {}".format(p["line"],
+                                  "[Line {}] {}".format(p["line"] + 1,
                                                         path_to_display)])
 
         def open_item(index):
