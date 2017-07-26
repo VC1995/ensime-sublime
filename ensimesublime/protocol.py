@@ -52,6 +52,8 @@ class ProtocolHandler(object):
         self.handlers["RefactorDiffEffect"] = self.apply_refactor
         self.handlers["ImportSuggestions"] = self.handle_import_suggestions
         # self.handlers["PackageInfo"] = self.handle_package_info
+        self.handlers["SourcePositions"] = self.handle_source_positions
+        self.handlers["HierarchyInfo"] = self.handle_hierarchy_info
 
     def handle_incoming_response(self, call_id, payload):
         """Get a registered handler for a given response and execute it."""
@@ -174,15 +176,15 @@ consequently the context menu commands may take longer to get enabled. You may c
         view = self.env.window.open_file(f)
 
         # either has line or offset
-        def _scroll_once_loaded(attempts=10):
+        def _scroll_once_loaded(view, attempts=10):
             offset = decl_pos.get("offset")
             line = decl_pos.get("line")
             if not offset and not line:
                 self.env.logger.debug("No offset or line number were found.")
                 return
-            while view.is_loading() and attempts:
-                sublime.set_timeout(_scroll_once_loaded, 100)
-                attempts -= 1
+            if view.is_loading() and attempts:
+                sublime.set_timeout(bind(_scroll_once_loaded, view, attempts - 1), 100)
+                return
             if not view.is_loading():
                 if not offset:
                     offset = view.text_point(line + 1, 1)
@@ -193,7 +195,7 @@ consequently the context menu commands may take longer to get enabled. You may c
             else:
                 self.env.logger.debug("Scrolling failed as the view wasn't ready.")
 
-        sublime.set_timeout(_scroll_once_loaded, 0)
+        sublime.set_timeout(bind(_scroll_once_loaded, view, 10), 0)
 
     def handle_string_response(self, call_id, payload):
         """Handler for response `StringResponse`.
@@ -310,3 +312,9 @@ consequently the context menu commands may take longer to get enabled. You may c
                                  content,
                                  max_width=512,
                                  on_navigate=lambda x: copy(self.env.window.active_view(), x)), 0)
+
+    def handle_source_positions(self, call_id, payload):
+        pass
+
+    def handle_hierarchy_info(self, call_id, payload):
+        pass
