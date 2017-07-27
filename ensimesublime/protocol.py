@@ -11,7 +11,7 @@ from outgoing import AddImportRefactorDesc, TypeCheckFilesReq
 from patch import fromfile
 from config import feedback, gconfig
 from symbol_format import completion_to_suggest, type_to_show, file_and_line_info
-from paths import root_as_str_from_abspath, relative_path
+from paths import root_as_str_from_abspath, relative_path, encode_path
 
 
 class ProtocolHandler(object):
@@ -150,7 +150,7 @@ consequently the context menu commands may take longer to get enabled. You may c
             p = sym.get("pos")
             if p:
                 location_list.append((p["file"], p["line"]))
-                path = relative_path(self.env.project_root, str(p["file"]))
+                path = encode_path(relative_path(self.env.project_root, str(p["file"])))
                 path_to_display = path if path is not None else str(p["file"])
                 file_line_info = file_and_line_info(path_to_display, p["line"])
                 item_list.append(["{}".format(str(sym["name"]).replace("$", ".")),
@@ -334,7 +334,7 @@ consequently the context menu commands may take longer to get enabled. You may c
             file = pos["file"]
             line = pos["line"]
             if (file, line) not in seen:
-                path = relative_path(self.env.project_root, str(file))
+                path = encode_path(relative_path(self.env.project_root, str(file)))
                 path_to_display = path if path is not None else str(file)
                 file_line_info = file_and_line_info(path_to_display, line)
                 location_list.append((file, line))
@@ -369,7 +369,7 @@ consequently the context menu commands may take longer to get enabled. You may c
             pos = cli["sourcePosition"]
             file = pos["file"]
             line = pos["line"]
-            path = relative_path(self.env.project_root, str(file))
+            path = encode_path(relative_path(self.env.project_root, str(file)))
             path_to_display = path if path is not None else str(file)
             file_line_info = file_and_line_info(path_to_display, line)
             name = cli.get("scalaName", cli["fqn"])
