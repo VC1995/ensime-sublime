@@ -340,6 +340,8 @@ consequently the context menu commands may take longer to get enabled. You may c
                 location_list.append((file, line))
                 item_list.append(file_line_info)
                 seen.add((file, line))
+        # noqa E501 ; hack https://forum.sublimetext.com/t/change-how-the-show-quick-panel-truncates-strings-or-truncate-strings-by-getting-quick-panel-width/20054/7
+        item_list.append("-" * 58)
 
         def open_item(index):
             if index == -1:

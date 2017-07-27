@@ -11,8 +11,8 @@ def file_and_line_info(path, line):
         line = 1
     if len(file) > 40:
         file = "..." + file[-37:]
-    print("{:42.40} Line{:>4}".format(file, line))
-    return "{:42.40} Line{:>4}".format(file, line)
+    print("{:42.40} Line {:4}".format(file, line))
+    return "{:42.40} Line {:4}".format(file, line)
 
 
 def completion_to_suggest(completion):

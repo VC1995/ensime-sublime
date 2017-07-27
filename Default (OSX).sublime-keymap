@@ -4,5 +4,6 @@
   { "keys": ["super+alt+o"], "command": "ensime_organise_imports" },
   { "keys": ["super+alt+c"], "command": "ensime_classpath_search" },
   { "keys": ["super+alt+f"], "command": "ensime_find_usages" },
-  { "keys": ["super+alt+d"], "command": "ensime_find_implementations" }
+  { "keys": ["super+alt+d"], "command": "ensime_find_implementations" },
+  { "keys": ["super+alt+g"], "command": "ensime_go_to_definition" }
 ]
