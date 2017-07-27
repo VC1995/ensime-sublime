@@ -168,7 +168,7 @@ class EnsimeFindUsages(EnsimeTextCommand):
             env.status_message("You have multiple cursors. Ensime is confused :/")
 
 
-class EnsimeFindHierarchy(EnsimeTextCommand):
+class EnsimeFindImplementations(EnsimeTextCommand):
     def is_enabled(self):
         env = getEnvironment(sublime.active_window())
         return bool(env and env.is_connected() and env.client.indexer_ready)

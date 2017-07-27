@@ -10,7 +10,7 @@ from notes import Note
 from outgoing import AddImportRefactorDesc, TypeCheckFilesReq
 from patch import fromfile
 from config import feedback, gconfig
-from symbol_format import completion_to_suggest, type_to_show
+from symbol_format import completion_to_suggest, type_to_show, file_and_line_info
 from paths import root_as_str_from_abspath, relative_path
 
 
@@ -132,7 +132,10 @@ consequently the context menu commands may take longer to get enabled. You may c
                 # request is async, file is reverted when patch is received and applied
                 AddImportRefactorDesc(file_name, imports[choice]).run_in(self.env, async=True)
 
-        sublime.set_timeout(bind(self.env.window.show_quick_panel, imports, do_refactor), 0)
+        sublime.set_timeout(bind(self.env.window.show_quick_panel,
+                                 imports,
+                                 do_refactor,
+                                 sublime.MONOSPACE_FONT), 0)
 
     def handle_package_info(self, call_id, payload):
         raise NotImplementedError()
@@ -146,21 +149,23 @@ consequently the context menu commands may take longer to get enabled. You may c
         for sym in syms:
             p = sym.get("pos")
             if p:
-                location_list.append((p["file"], p["line"] + 1))
+                location_list.append((p["file"], p["line"]))
                 path = relative_path(self.env.project_root, str(p["file"]))
                 path_to_display = path if path is not None else str(p["file"])
+                file_line_info = file_and_line_info(path_to_display, p["line"])
                 item_list.append(["{}".format(str(sym["name"]).replace("$", ".")),
-                                  "[Line {}] {}".format(p["line"] + 1,
-                                                        path_to_display)])
+                                  file_line_info])
 
         def open_item(index):
             if index == -1:
                 return
             loc = location_list[index]
-            self.env.window.open_file("{}:{}:{}".format(loc[0], loc[1], 1),
-                                      sublime.ENCODED_POSITION)
+            self.env.editor.open_and_scroll(loc[0], loc[1])
 
-        sublime.set_timeout(bind(self.env.window.show_quick_panel, item_list, open_item), 0)
+        sublime.set_timeout(bind(self.env.window.show_quick_panel,
+                                 item_list,
+                                 open_item,
+                                 sublime.MONOSPACE_FONT), 0)
 
     def handle_symbol_info(self, call_id, payload):
         decl_pos = payload.get("declPos")
@@ -176,26 +181,26 @@ consequently the context menu commands may take longer to get enabled. You may c
         view = self.env.window.open_file(f)
 
         # either has line or offset
-        def _scroll_once_loaded(view, attempts=10):
+        def _scroll_once_loaded(view, offset, line, attempts=10):
             offset = decl_pos.get("offset")
             line = decl_pos.get("line")
             if not offset and not line:
                 self.env.logger.debug("No offset or line number were found.")
                 return
             if view.is_loading() and attempts:
-                sublime.set_timeout(bind(_scroll_once_loaded, view, attempts - 1), 100)
+                sublime.set_timeout(bind(_scroll_once_loaded, view, offset, line, attempts - 1),
+                                    100)
                 return
             if not view.is_loading():
-                if not offset:
-                    offset = view.text_point(line + 1, 1)
-                self.env.logger.debug("Scrolling to offset : {}".format(offset))
-                view.sel().clear()
-                view.sel().add(sublime.Region(offset))
-                view.show_at_center(offset)
+                if not line:
+                    line, _ = view.rowcol(offset)
+                self.env.editor.scroll(view, line)
             else:
-                self.env.logger.debug("Scrolling failed as the view wasn't ready.")
+                self.env.logger.debug("Scrolling failed as the view didn't get ready in.")
 
-        sublime.set_timeout(bind(_scroll_once_loaded, view, 10), 0)
+        sublime.set_timeout(bind(_scroll_once_loaded,
+                                 view, decl_pos.get("offset"), decl_pos.get("line"), 10),
+                            0)
 
     def handle_string_response(self, call_id, payload):
         """Handler for response `StringResponse`.
@@ -316,26 +321,68 @@ consequently the context menu commands may take longer to get enabled. You may c
     def handle_source_positions(self, call_id, payload):
         self.env.logger.debug("handle_source_positions: in {}".format(Pretty(payload)))
         positions = payload["positions"]
+        if len(positions) == 0:
+            sublime.set_timeout(bind(self.env.window.active_view().show_popup,
+                                     "No usages found.",
+                                     sublime.HIDE_ON_MOUSE_MOVE),
+                                0)
+            return
         seen = set()
         location_list = []
         item_list = []
         for pos in positions:
             file = pos["file"]
-            path = relative_path(self.env.project_root, str(file))
-            path_to_display = path if path is not None else str(file)
             line = pos["line"]
             if (file, line) not in seen:
-                seen.add((file, line))
+                path = relative_path(self.env.project_root, str(file))
+                path_to_display = path if path is not None else str(file)
+                file_line_info = file_and_line_info(path_to_display, line)
                 location_list.append((file, line))
-                item_list.append("{:<20}{:>7}".format(path_to_display, line))
+                item_list.append(file_line_info)
+                seen.add((file, line))
 
         def open_item(index):
             if index == -1:
                 return
             loc = location_list[index]
-            self.env.window.open_file("{}:{}:{}".format(loc[0], loc[1], 1),
-                                      sublime.ENCODED_POSITION)
-        sublime.set_timeout(bind(self.env.window.active_view().show_popup_menu, item_list, open_item), 0)
+            self.env.editor.open_and_scroll(loc[0], loc[1])
+        sublime.set_timeout(bind(self.env.window.show_quick_panel,
+                                 item_list,
+                                 open_item,
+                                 sublime.MONOSPACE_FONT),
+                            0)
 
     def handle_hierarchy_info(self, call_id, payload):
-        pass
+        self.env.logger.debug("handle_hierarchy_info: in {}".format(Pretty(payload)))
+        classinfos = payload["inheritors"]
+        if len(classinfos) == 0:
+            sublime.set_timeout(bind(self.env.window.active_view().show_popup,
+                                     "No implementations found.",
+                                     sublime.HIDE_ON_MOUSE_MOVE),
+                                0)
+            return
+        location_list = []
+        item_list = []
+        for cli in classinfos:
+            pos = cli["sourcePosition"]
+            file = pos["file"]
+            line = pos["line"]
+            path = relative_path(self.env.project_root, str(file))
+            path_to_display = path if path is not None else str(file)
+            file_line_info = file_and_line_info(path_to_display, line)
+            name = cli.get("scalaName", cli["fqn"])
+            declAs = cli["declAs"]["typehint"]
+            location_list.append((file, line))
+            item_list.append(["{} {}".format(declAs, name),
+                              file_line_info])
+
+        def open_item(index):
+            if index == -1:
+                return
+            loc = location_list[index]
+            self.env.editor.open_and_scroll(loc[0], loc[1])
+        sublime.set_timeout(bind(self.env.window.show_quick_panel,
+                                 item_list,
+                                 open_item,
+                                 sublime.MONOSPACE_FONT),
+                            0)
