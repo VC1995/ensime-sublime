@@ -314,7 +314,28 @@ consequently the context menu commands may take longer to get enabled. You may c
                                  on_navigate=lambda x: copy(self.env.window.active_view(), x)), 0)
 
     def handle_source_positions(self, call_id, payload):
-        pass
+        self.env.logger.debug("handle_source_positions: in {}".format(Pretty(payload)))
+        positions = payload["positions"]
+        seen = set()
+        location_list = []
+        item_list = []
+        for pos in positions:
+            file = pos["file"]
+            path = relative_path(self.env.project_root, str(file))
+            path_to_display = path if path is not None else str(file)
+            line = pos["line"]
+            if (file, line) not in seen:
+                seen.add((file, line))
+                location_list.append((file, line))
+                item_list.append("{:<20}{:>7}".format(path_to_display, line))
+
+        def open_item(index):
+            if index == -1:
+                return
+            loc = location_list[index]
+            self.env.window.open_file("{}:{}:{}".format(loc[0], loc[1], 1),
+                                      sublime.ENCODED_POSITION)
+        sublime.set_timeout(bind(self.env.window.active_view().show_popup_menu, item_list, open_item), 0)
 
     def handle_hierarchy_info(self, call_id, payload):
         pass
