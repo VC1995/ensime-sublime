@@ -336,20 +336,17 @@ consequently the context menu commands may take longer to get enabled. You may c
                                      sublime.HIDE_ON_MOUSE_MOVE),
                                 0)
             return
-        seen = set()
         location_list = []
         item_list = []
         for hint in sourcePositions:
             pos = hint["position"]
             file = pos["file"]
             line = pos["line"]
-            if (file, line) not in seen:
-                path = encode_path(relative_path(self.env.project_root, str(file)))
-                path_to_display = path if path is not None else str(file)
-                file_line_info = file_and_line_info(path_to_display, line)
-                location_list.append((file, line))
-                item_list.append([hint.get("preview", "no preview available"), file_line_info])
-                seen.add((file, line))
+            path = encode_path(relative_path(self.env.project_root, str(file)))
+            path_to_display = path if path is not None else str(file)
+            file_line_info = file_and_line_info(path_to_display, line)
+            location_list.append((file, line))
+            item_list.append([hint.get("preview", "no preview available"), file_line_info])
 
         def open_item(index):
             if index == -1:
