@@ -66,7 +66,6 @@ class EnsimeLauncher(object):
             self.strategy = assembly
         else:
             self.strategy = DotEnsimeLauncher(config)
-        self.strategy = DotEnsimeLauncher(config)
 
     def launch(self):
         return self.strategy.launch()
