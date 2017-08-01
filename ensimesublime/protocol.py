@@ -206,6 +206,7 @@ consequently the context menu commands may take longer to get enabled. You may c
                 if not line:
                     line, _ = view.rowcol(offset)
                     line = line + 1
+                self.env.window.focus_view(view)
                 self.env.editor.scroll(view, line)
 
             sublime.set_timeout(bind(_scroll, view, offset, line), 0)
